@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Management;
+using System.Net;
+using System.Net.Sockets;
 
 namespace dns_updater
 {
@@ -137,5 +139,10 @@ namespace dns_updater
             return null;
         }
 
+        private void Test()
+        {
+
+            
+    }
     }
 }
