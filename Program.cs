@@ -38,24 +38,26 @@ namespace dns_updater
 
         }
 
-        private static void RunServer()
+        private static string RunServer()
         {
+            //prepare data
             TcpListener server = null;
+            String receivedData = null;
+
             try
             {
-                // Set the TcpListener port.
+                //set the port to listen on
                 Int32 port = 80;
-                IPAddress localAddr = IPAddress.Parse("127.0.0.1");
 
-                // TcpListener server = new TcpListener(port);
+                //setup to listen for updates from any ip address
                 server = new TcpListener(IPAddress.Any, port);
 
-                // Start listening for client requests.
+                //start listening for updates.
                 server.Start();
 
                 // Buffer for reading data
                 Byte[] bytes = new Byte[256];
-                String data = null;
+                
 
                 // Enter the listening loop.
                 while (true)
@@ -67,8 +69,6 @@ namespace dns_updater
                     TcpClient client = server.AcceptTcpClient();
                     Console.WriteLine("Connected!");
 
-                    data = null;
-
                     // Get a stream object for reading and writing
                     NetworkStream stream = client.GetStream();
 
@@ -78,35 +78,46 @@ namespace dns_updater
                     while ((i = stream.Read(bytes, 0, bytes.Length)) != 0)
                     {
                         // Translate data bytes to a ASCII string.
-                        data = System.Text.Encoding.ASCII.GetString(bytes, 0, i);
-                        Console.WriteLine("Received: {0}", data);
+                        receivedData = System.Text.Encoding.ASCII.GetString(bytes, 0, i);
 
-                        // Process the data sent by the client.
-                        data = data.ToUpper();
+                        //validate received data
+                        if (IsIPDataValid(receivedData))
+                        {
+                            //if valid, reply with success response
+                            string responseData = "Success";
 
-                        byte[] msg = System.Text.Encoding.ASCII.GetBytes(data);
+                            //convert response string to bytes
+                            byte[] byteResponse = System.Text.Encoding.ASCII.GetBytes(responseData);
 
-                        // Send back a response.
-                        stream.Write(msg, 0, msg.Length);
-                        Console.WriteLine("Sent: {0}", data);
+                            //send response to sender
+                            stream.Write(byteResponse, 0, byteResponse.Length);
+                        }
                     }
 
-                    // Shutdown and end connection
+                    //shutdown and end connection
                     client.Close();
                 }
             }
-            catch (SocketException e)
+            catch (Exception e)
             {
-                Console.WriteLine("SocketException: {0}", e);
+                //if error, show message to user
+                Console.WriteLine("Error when receiving data:\n {0}", e);
             }
             finally
             {
-                // Stop listening for new clients.
+                //stop listening for new clients.
                 server.Stop();
             }
 
-            Console.WriteLine("\nHit enter to continue...");
-            Console.Read();
+            //return response data to caller
+            return receivedData;
+        }
+
+        private static bool IsIPDataValid(string receivedData)
+        {
+            //temp
+            return true;
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -180,124 +191,78 @@ namespace dns_updater
             //get new IP
             string newIp = GetNewIp();
 
-            //prepare IPs to be sent receiver
-            var ipData = new {OldIp = oldIp, NewIp = newIp};
+            //combine old & new IP into a XML
+            XElement ipList = new XElement("IP",
+                new XElement("OLD", oldIp),
+                new XElement("NEW", newIp)
+            );
 
-            //send old & new IP to receiver
-            SendDataToReceiver(receiverAddress, ipData);
+            //send old & new IP to receiver, get response also
+            string response = SendDataToReceiver(receiverAddress, ipList);
+
+            //display response temp
+            Console.WriteLine(response);
         }
 
-        private static void SendDataToReceiver(string receiverAddress, object ipData)
+        /// <summary>
+        /// Sends data in the XML format to specified IP address
+        /// return response from receiver as string
+        /// </summary>
+        /// <param name="receiverAddress"></param>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        private static string SendDataToReceiver(string receiverAddress, XElement data)
         {
-            //setup connection parameters
-            string message = "Hello";
-            int port = 80; //TCP port number
+            //construct message to be sent
+            string message = data.ToString();
 
+            //set TCP port number
+            int port = 80;
+
+            //to store the response from receiver
+            String responseData = String.Empty;
 
             //try to parse receivers IP address
             IPAddress ipAddress = IPAddress.Parse(receiverAddress);
 
             //if IP address did not parse, return error
-            if (ipAddress == null)
-            {
-                throw new Exception("Receiver IP address not valid!");
-            }
+            if (ipAddress == null) { throw new Exception("Receiver IP address not valid!"); }
 
-
+            //prepare tcp connector
             TcpClient client = new TcpClient(receiverAddress, port);
 
-            // Translate the passed message into ASCII and store it as a Byte array.
-            Byte[] data = System.Text.Encoding.ASCII.GetBytes(message);
+            //translate the passed message into ASCII and store it as a Byte array.
+            Byte[] byteData = System.Text.Encoding.ASCII.GetBytes(message);
 
             try
             {
                 // Get a client stream for reading and writing.
-                //  Stream stream = client.GetStream();
-
                 NetworkStream stream = client.GetStream();
 
                 // Send the message to the connected TcpServer.
-                stream.Write(data, 0, data.Length);
-
-                Console.WriteLine("Sent: {0}", message);
-
-                // Receive the TcpServer.response.
+                stream.Write(byteData, 0, byteData.Length);
 
                 // Buffer to store the response bytes.
-                data = new Byte[256];
-
-                // String to store the response ASCII representation.
-                String responseData = String.Empty;
+                byteData = new Byte[256];
 
                 // Read the first batch of the TcpServer response bytes.
-                Int32 bytes = stream.Read(data, 0, data.Length);
-                responseData = System.Text.Encoding.ASCII.GetString(data, 0, bytes);
-                Console.WriteLine("Received: {0}", responseData);
+                Int32 bytes = stream.Read(byteData, 0, byteData.Length);
+                
+                //save the response data
+                responseData = System.Text.Encoding.ASCII.GetString(byteData, 0, bytes);
 
-                // Close everything.
+                //close everything.
                 stream.Close();
                 client.Close();
             }
-            catch (ArgumentNullException e)
+            //if fail
+            catch (Exception e)
             {
-                Console.WriteLine("ArgumentNullException: {0}", e);
-            }
-            catch (SocketException e)
-            {
-                Console.WriteLine("SocketException: {0}", e);
+                //show error message to user
+                Console.WriteLine("Error when sending data:\n {0}", e);
             }
 
-            Console.WriteLine("\n Press Enter to continue...");
-            Console.Read();
-
-            Console.WriteLine("Sent Successfully");
-        }
-
-        private static void SendDataToReceiver2(string receiverAddress, object ipData)
-        {
-            //setup connection parameters
-            string response = "Hello";
-            int port = 80; //TCP port number
-
-
-            //try to parse receivers IP address
-            IPAddress ipAddress = IPAddress.Parse(receiverAddress);
-
-            //if IP address did not parse, return error
-            if (ipAddress == null)
-            {
-                throw new Exception("Receiver IP address not valid!");
-            }
-
-
-            IPEndPoint serverEndPoint = new IPEndPoint(ipAddress, port);
-            byte[] receiveBuffer = new byte[100];
-
-            try
-            {
-                using (TcpClient client = new TcpClient(serverEndPoint))
-                {
-                    using (Socket socket = client.Client)
-                    {
-                        socket.Connect(serverEndPoint);
-
-                        byte[] data = Encoding.ASCII.GetBytes(response);
-
-                        socket.Send(data, data.Length, SocketFlags.None);
-
-                        socket.Receive(receiveBuffer);
-
-                        Console.WriteLine(Encoding.ASCII.GetString(receiveBuffer));
-                    }
-                }
-            }
-            catch (SocketException socketException)
-            {
-                Console.WriteLine("Socket Exception : ", socketException.Message);
-                throw;
-            }
-
-            Console.WriteLine("Sent Successfully");
+            return responseData;
         }
 
         private static bool IsIpChanged()
