@@ -48,13 +48,22 @@ namespace dns_updater
             }
         }
 
+        /// <summary>
+        /// Gets server's IP address from user
+        /// </summary>
         private static string GetReceiverAddress()
         {
+            string ipAddress;
+
+            GetIp:
             //prompt user to type IP address
             Console.WriteLine("Type the IP address of DNS server");
 
             //store user input
-            string ipAddress = Console.ReadLine();
+            ipAddress = Console.ReadLine();
+
+            //check IP, if invalid, try again
+            if (!isIpValid(ipAddress)) { goto GetIp; }
 
             //return IP address to caller
             return ipAddress;
@@ -110,9 +119,6 @@ namespace dns_updater
 
             //set TCP port number
             int port = 80;
-
-            //if IP is invalid, don't continue
-            if (!isIpValid(receiverAddress)) { return; }
 
             TcpClient client = null;
             NetworkStream stream = null;
