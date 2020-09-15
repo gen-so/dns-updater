@@ -86,11 +86,14 @@ namespace dns_updater
                 new XElement("NEW", newIp)
             );
 
+            //let user know old & new IPs
+            Console.WriteLine($"Old IP:{oldIp}\nNew IP:{newIp}");
+
             //send old & new IP to receiver, get response also
             string response = SendDataToReceiver(receiverAddress, ipList);
 
             //display response temp
-            Console.WriteLine(response);
+            //Console.WriteLine(response);
         }
 
         /// <summary>
@@ -103,7 +106,7 @@ namespace dns_updater
         private static string SendDataToReceiver(string receiverAddress, XElement data)
         {
             //construct message to be sent
-            string message = data.ToString();
+            string dataString = data.ToString();
 
             //set TCP port number
             int port = 80;
@@ -120,8 +123,8 @@ namespace dns_updater
             //prepare tcp connector
             TcpClient client = new TcpClient(receiverAddress, port);
 
-            //translate the passed message into ASCII and store it as a Byte array.
-            Byte[] byteData = System.Text.Encoding.ASCII.GetBytes(message);
+            //convert string to byte
+            Byte[] dataByte = System.Text.Encoding.ASCII.GetBytes(dataString);
 
             try
             {
@@ -129,16 +132,19 @@ namespace dns_updater
                 NetworkStream stream = client.GetStream();
 
                 // Send the message to the connected TcpServer.
-                stream.Write(byteData, 0, byteData.Length);
+                stream.Write(dataByte, 0, dataByte.Length);
+
+                //let user know data has been sent
+                Console.WriteLine("Data sent server");
 
                 // Buffer to store the response bytes.
-                byteData = new Byte[256];
+                //byteData = new Byte[256];
 
                 // Read the first batch of the TcpServer response bytes.
-                Int32 bytes = stream.Read(byteData, 0, byteData.Length);
+                //Int32 bytes = stream.Read(byteData, 0, byteData.Length);
 
                 //save the response data
-                responseData = System.Text.Encoding.ASCII.GetString(byteData, 0, bytes);
+                //responseData = System.Text.Encoding.ASCII.GetString(byteData, 0, bytes);
 
                 //close everything.
                 stream.Close();

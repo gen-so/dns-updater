@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net;
 using System.Net.Sockets;
+using System.Xml.Linq;
 
 namespace dns_updater
 {
@@ -13,13 +14,20 @@ namespace dns_updater
 
             //temp print data 
             Console.WriteLine(ipData);
+
+            //parse data to XML
+            XElement ipList = XElement.Parse(ipData);
+
+            //extract old IP from XML
+            XElement oldIp = ipList.Element("OLD");
+            //extract new IP from XML
+            XElement newIp = ipList.Element("NEW");
+
         }
 
         /// <summary>
         /// Gets IP data from sender via TCP
-        /// Waits for 
         /// </summary>
-        /// <returns></returns>
         private static string GetDataFromSender()
         {
             //set the port to listen on
@@ -42,44 +50,68 @@ namespace dns_updater
                 //create empty bytes holder for receiving data
                 Byte[] bytes = new Byte[256];
 
+                Console.Write("Waiting for a connection... ");
+
+                // Perform a blocking call to accept requests.
+                TcpClient client = server.AcceptTcpClient();
+                Console.WriteLine("Connected!");
+
+                // Get a stream object for reading and writing
+                NetworkStream stream = client.GetStream();
+
+                //receive all the data sent by the client
+                stream.Read(bytes, 0, bytes.Length);
+
+                //translate data bytes to a ASCII string.
+                receivedData = System.Text.Encoding.ASCII.GetString(bytes, 0, 0);
+
+                //close connection
+                client.Close();
+
+
                 //enter the listening loop
-                while (true)
-                {
-                    Console.Write("Waiting for a connection... ");
+                //while (true)
+                //{
+                //    Console.Write("Waiting for a connection... ");
 
-                    // Perform a blocking call to accept requests.
-                    // You could also use server.AcceptSocket() here.
-                    TcpClient client = server.AcceptTcpClient();
-                    Console.WriteLine("Connected!");
+                //    // Perform a blocking call to accept requests.
+                //    TcpClient client = server.AcceptTcpClient();
+                //    Console.WriteLine("Connected!");
 
-                    // Get a stream object for reading and writing
-                    NetworkStream stream = client.GetStream();
+                //    // Get a stream object for reading and writing
+                //    NetworkStream stream = client.GetStream();
 
-                    int i;
+                //    //receive all the data sent by the client
+                //    stream.Read(bytes, 0, bytes.Length);
 
-                    // Loop to receive all the data sent by the client.
-                    while ((i = stream.Read(bytes, 0, bytes.Length)) != 0)
-                    {
-                        // Translate data bytes to a ASCII string.
-                        receivedData = System.Text.Encoding.ASCII.GetString(bytes, 0, i);
+                //    //translate data bytes to a ASCII string.
+                //    receivedData = System.Text.Encoding.ASCII.GetString(bytes, 0, 0);
 
-                        //validate received data
-                        if (IsIPDataValid(receivedData))
-                        {
-                            //if valid, reply with success response
-                            string responseData = "Success";
 
-                            //convert response string to bytes
-                            byte[] byteResponse = System.Text.Encoding.ASCII.GetBytes(responseData);
+                //    //int i;
 
-                            //send response to sender
-                            stream.Write(byteResponse, 0, byteResponse.Length);
-                        }
-                    }
+                //    //loop to receive all the data sent by the client.
+                //    //while ((i = stream.Read(bytes, 0, bytes.Length)) != 0)
+                //    //{
+                //    //    //translate data bytes to a ASCII string.
+                //    //    //receivedData = System.Text.Encoding.ASCII.GetString(bytes, 0, i);
 
-                    //shutdown and end connection
-                    client.Close();
-                }
+                //    //    //validate received data
+                //    //    //if (!IsIPDataValid(receivedData)) continue;
+
+                //    //    //if valid, reply with success response
+                //    //    //string responseData = "Success";
+
+                //    //    //convert response string to bytes
+                //    //    //byte[] byteResponse = System.Text.Encoding.ASCII.GetBytes(responseData);
+
+                //    //    //send response to sender
+                //    //    //stream.Write(byteResponse, 0, byteResponse.Length);
+                //    //}
+
+                //    //shutdown and end connection
+                //    client.Close();
+                //}
             }
             catch (Exception e)
             {
@@ -95,6 +127,8 @@ namespace dns_updater
             //return response data to caller
             return receivedData;
         }
+
+        
 
         private static bool IsIPDataValid(string receivedData)
         {
