@@ -1,11 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.OleDb;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Management;
 using System.Net;
 using System.Net.Sockets;
+using System.Xml.Linq;
 
 
 namespace dns_updater
@@ -30,6 +33,8 @@ namespace dns_updater
                     RunClient(receiverIp, intervalSec);
                     break;
             }
+
+
         }
 
         private static void RunServer()
@@ -105,12 +110,16 @@ namespace dns_updater
 
         /// <summary>
         /// The one client mode method, to start & run client mode.
-        /// Infinite loop to keep client running, method does not close.
+        /// Uses infinite loop to keep client running, method does not close.
         /// </summary>
-        /// <param name="receiverAddress">receiver's IP address</param>
-        /// <param name="interval">time to poll receiver (seconds)</param>
-        private static void RunClient(string receiverAddress, int interval)
+        private static void RunClient()
         {
+            
+            //get receiver address from user
+            string receiverAddress = GetReceiverAddress();
+            //update receiver every X (seconds), set default 10
+            int interval = 10;
+
             CheckIp:
             //check if IP has changed
             if (IsIpChanged())
@@ -133,6 +142,18 @@ namespace dns_updater
                 //goto back to top to check for IP change
                 goto CheckIp;
             }
+        }
+
+        private static string GetReceiverAddress()
+        {
+            //prompt user to type IP address
+            Console.WriteLine("Type the IP address of DNS server");
+            
+            //store user input
+            string ipAddress = Console.ReadLine();
+
+            //return IP address to caller
+            return ipAddress;
         }
 
         private static void WaitInterval(object interval)
@@ -288,16 +309,44 @@ namespace dns_updater
             }
         }
 
+        /// <summary>
+        /// Gets computers public IP address from remote site
+        /// </summary>
         private static string GetNewIp()
         {
-            return "WORLD!!";
-            throw new NotImplementedException();
+            String address = "";
+            WebRequest request = WebRequest.Create("http://checkip.dyndns.org/");
+            using (WebResponse response = request.GetResponse())
+            using (StreamReader stream = new StreamReader(response.GetResponseStream()))
+            {
+                address = stream.ReadToEnd();
+            }
+
+            int first = address.IndexOf("Address: ") + 9;
+            int last = address.LastIndexOf("</body>");
+            address = address.Substring(first, last - first);
+
+            return address;
         }
 
         private static string GetOldIp()
         {
+            //load ip address from file
+            XDocument contactDoc = XDocument.Load("ip-list.xml");
+
             return "HELLO!!";
             throw new NotImplementedException();
+
+        }
+
+        private static void SaveOldIp(string ipAddress)
+        {
+            //prepare to save IP address
+            XElement ipList = new XElement("OldIP", ipAddress);
+
+            //save ip address to file on disk  
+            ipList.Save("ip-list.xml");
+
         }
     }
 }
