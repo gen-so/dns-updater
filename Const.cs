@@ -6,8 +6,12 @@ using System.Threading.Tasks;
 
 namespace dns_updater
 {
-    public static class Const
+    public class Const
     {
-        public const string OldIpListFile = "ip-list.xml";
+        //location path of application
+        public static readonly string AppLocation = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().GetName().CodeBase);
+
+        //location & name of ip list file
+        public static readonly string OldIpListFile = AppLocation + "\\ip-list.xml";
     }
 }

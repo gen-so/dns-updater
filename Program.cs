@@ -9,11 +9,11 @@ using System.Management;
 using System.Net;
 using System.Net.Sockets;
 using System.Xml.Linq;
-
+using System.Windows;
 
 namespace dns_updater
 {
-    class Program
+    public class Program
     {
         static void Main(string[] args)
         {
@@ -30,7 +30,7 @@ namespace dns_updater
                     RunServer();
                     break;
                 case "C":
-                    RunClient(receiverIp, intervalSec);
+                    RunClient();
                     break;
             }
 
@@ -329,23 +329,25 @@ namespace dns_updater
             return address;
         }
 
-        private static string GetOldIp()
+        public static string GetOldIp()
         {
-            //load ip address from file
-            XDocument contactDoc = XDocument.Load("ip-list.xml");
+            //load file which has IP address
+            XDocument ipAddressList = XDocument.Load(Const.OldIpListFile);
 
-            return "HELLO!!";
-            throw new NotImplementedException();
+            //extract IP address from loaded file
+            string ipAddress = ((XElement)ipAddressList.FirstNode).Value;
 
+            //return ip address to caller
+            return ipAddress;
         }
 
-        private static void SaveOldIp(string ipAddress)
+        public static void SaveOldIp(string ipAddress)
         {
             //prepare to save IP address
             XElement ipList = new XElement("OldIP", ipAddress);
 
-            //save ip address to file on disk  
-            ipList.Save("ip-list.xml");
+            //save ip address to file on disk  (TEMP FILE LOCATION)
+            ipList.Save(Const.OldIpListFile);
 
         }
     }
