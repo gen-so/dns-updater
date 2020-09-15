@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Management;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading;
 using System.Xml.Linq;
 using System.Windows;
 
@@ -120,12 +121,15 @@ namespace dns_updater
             //update receiver every X (seconds), set default 10
             int interval = 10;
 
-            CheckIp:
             //check if IP has changed
+            CheckIp:
             if (IsIpChanged())
             {
                 //IP has changed, so send new IP to receiver
                 SendNewIpToReceiver(receiverAddress);
+
+                //save a copy of the sent IP as Old IP
+                SaveOldIp(receiverAddress);
 
                 //wait interval
                 WaitInterval(interval);
@@ -139,7 +143,7 @@ namespace dns_updater
                 //wait interval
                 WaitInterval(interval);
 
-                //goto back to top to check for IP change
+                //check again if IP has changed
                 goto CheckIp;
             }
         }
@@ -156,10 +160,17 @@ namespace dns_updater
             return ipAddress;
         }
 
-        private static void WaitInterval(object interval)
+        /// <summary>
+        /// Pauses the application for interval time (seconds)
+        /// </summary>
+        /// <param name="interval">Time to wait in seconds</param>
+        private static void WaitInterval(int interval)
         {
-            return;
-            throw new NotImplementedException();
+            //convert interval seconds to microseconds
+            int intervalMs = interval * 1000;
+
+            //execute sleeper
+            Thread.Sleep(intervalMs);
         }
 
         private static void SendNewIpToReceiver(string receiverAddress)
@@ -331,11 +342,25 @@ namespace dns_updater
 
         public static string GetOldIp()
         {
-            //load file which has IP address
-            XDocument ipAddressList = XDocument.Load(Const.OldIpListFile);
+            XDocument ipAddressList;
+        GetIp:
+            try
+            {
+                //load file which has IP address
+                ipAddressList = XDocument.Load(Const.OldIpListFile);
+            }
+            //if file not found
+            catch (FileNotFoundException)
+            {
+                //make a new file, with blank IP address
+                SaveOldIp("0.0.0.0");
+
+                //try to load IP file again
+                goto GetIp;
+            }
 
             //extract IP address from loaded file
-            string ipAddress = ((XElement)ipAddressList.FirstNode).Value;
+            string ipAddress = ((XElement) ipAddressList.FirstNode).Value;
 
             //return ip address to caller
             return ipAddress;
