@@ -38,28 +38,44 @@ namespace dns_updater
 
         }
 
-        private static string RunServer()
+        private static void RunServer()
         {
-            //prepare data
-            TcpListener server = null;
+            //get data from sender
+            string ipData =  GetDataFromSender();
+
+            //temp print data 
+            Console.WriteLine(ipData);
+        }
+
+
+        /// <summary>
+        /// Gets IP data from sender via TCP
+        /// Waits for 
+        /// </summary>
+        /// <returns></returns>
+        private static string GetDataFromSender()
+        {
+            //set the port to listen on
+            Int32 port = 80;
+
+            //sender can be from any IP address
+            IPAddress senderIp = IPAddress.Any;
+
+            //create a listener for data from sender
+            TcpListener server = new TcpListener(senderIp, port);
+
+            //set received data as empty first
             String receivedData = null;
 
             try
             {
-                //set the port to listen on
-                Int32 port = 80;
-
-                //setup to listen for updates from any ip address
-                server = new TcpListener(IPAddress.Any, port);
-
-                //start listening for updates.
+                //start the listener
                 server.Start();
 
-                // Buffer for reading data
+                //create empty bytes holder for receiving data
                 Byte[] bytes = new Byte[256];
-                
 
-                // Enter the listening loop.
+                //enter the listening loop
                 while (true)
                 {
                     Console.Write("Waiting for a connection... ");
