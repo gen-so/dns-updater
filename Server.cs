@@ -53,7 +53,7 @@ namespace dns_updater
                 //create empty bytes holder for receiving data
                 Byte[] bytes = new Byte[256];
 
-                Console.Write("Waiting for a updates...");
+                Console.Write("Waiting for a updates...\n");
 
                 // Perform a blocking call to accept requests.
                 TcpClient client = server.AcceptTcpClient();
@@ -62,10 +62,10 @@ namespace dns_updater
                 NetworkStream stream = client.GetStream();
 
                 //receive all the data sent by the client
-                stream.Read(bytes, 0, bytes.Length);
+                int i = stream.Read(bytes, 0, bytes.Length);
 
                 //translate data bytes to a ASCII string.
-                receivedData = System.Text.Encoding.ASCII.GetString(bytes, 0, 0);
+                receivedData = System.Text.Encoding.ASCII.GetString(bytes, 0, i);
 
                 //let user know, updates received
                 Console.WriteLine("Updates received");

@@ -90,7 +90,7 @@ namespace dns_updater
             Console.WriteLine($"Old IP:{oldIp}\nNew IP:{newIp}");
 
             //send old & new IP to receiver, get response also
-            string response = SendDataToReceiver(receiverAddress, ipList);
+            SendDataToReceiver(receiverAddress, ipList);
 
             //display response temp
             //Console.WriteLine(response);
@@ -103,7 +103,7 @@ namespace dns_updater
         /// <param name="receiverAddress"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        private static string SendDataToReceiver(string receiverAddress, XElement data)
+        private static void SendDataToReceiver(string receiverAddress, XElement data)
         {
             //construct message to be sent
             string dataString = data.ToString();
@@ -111,14 +111,8 @@ namespace dns_updater
             //set TCP port number
             int port = 80;
 
-            //to store the response from receiver
-            String responseData = String.Empty;
-
-            //try to parse receivers IP address
-            IPAddress ipAddress = IPAddress.Parse(receiverAddress);
-
-            //if IP address did not parse, return error
-            if (ipAddress == null) { throw new Exception("Receiver IP address not valid!"); }
+            //if IP is invalid, don't continue
+            if (!isIpValid(receiverAddress)) { return; }
 
             TcpClient client = null;
             NetworkStream stream = null;
@@ -136,6 +130,14 @@ namespace dns_updater
 
                 //send the data to the receiver
                 stream.Write(dataByte, 0, dataByte.Length);
+
+                //close everything.
+                stream.Close();
+                client.Close();
+
+                //let user know data has been sent
+                Console.WriteLine("Data sent to server");
+
 
                 // Buffer to store the response bytes.
                 //byteData = new Byte[256];
@@ -157,17 +159,27 @@ namespace dns_updater
                 //show error message to user
                 Console.WriteLine("Error when sending data:\n {0}", e);
             }
-            finally
-            {
-                //close everything.
-                stream.Close();
-                client.Close();
 
-                //let user know data has been sent
-                Console.WriteLine("Data sent to server");
+        }
+
+        private static bool isIpValid(string receiverAddress)
+        {
+            try
+            {
+                //try to parse IP address
+                IPAddress ipAddress = IPAddress.Parse(receiverAddress);
+            }
+            catch (FormatException)
+            {
+                //let user know IP address is invalid
+                Console.WriteLine("Server IP address not valid!");
+
+                //return as invalid
+                return false;
             }
 
-            return responseData;
+            //if no exception, then IP is valid
+            return true;
         }
 
         private static bool IsIpChanged()
