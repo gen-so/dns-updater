@@ -9,20 +9,23 @@ namespace dns_updater
     {
         public static void Run()
         {
+            GetData:
             //get data from sender
             string ipData = GetDataFromSender();
-
-            //temp print data 
-            Console.WriteLine(ipData);
 
             //parse data to XML
             XElement ipList = XElement.Parse(ipData);
 
             //extract old IP from XML
             XElement oldIp = ipList.Element("OLD");
+
             //extract new IP from XML
             XElement newIp = ipList.Element("NEW");
 
+            Console.WriteLine($"OLD:{oldIp.Value}\nNEW:{newIp.Value}");
+            
+            //go back to getting data from sender
+            goto GetData;
         }
 
         /// <summary>
@@ -50,12 +53,11 @@ namespace dns_updater
                 //create empty bytes holder for receiving data
                 Byte[] bytes = new Byte[256];
 
-                Console.Write("Waiting for a connection... ");
+                Console.Write("Waiting for a updates...");
 
                 // Perform a blocking call to accept requests.
                 TcpClient client = server.AcceptTcpClient();
-                Console.WriteLine("Connected!");
-
+                
                 // Get a stream object for reading and writing
                 NetworkStream stream = client.GetStream();
 
@@ -64,6 +66,9 @@ namespace dns_updater
 
                 //translate data bytes to a ASCII string.
                 receivedData = System.Text.Encoding.ASCII.GetString(bytes, 0, 0);
+
+                //let user know, updates received
+                Console.WriteLine("Updates received");
 
                 //close connection
                 client.Close();
@@ -127,8 +132,6 @@ namespace dns_updater
             //return response data to caller
             return receivedData;
         }
-
-        
 
         private static bool IsIPDataValid(string receivedData)
         {

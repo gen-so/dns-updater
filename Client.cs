@@ -120,22 +120,22 @@ namespace dns_updater
             //if IP address did not parse, return error
             if (ipAddress == null) { throw new Exception("Receiver IP address not valid!"); }
 
-            //prepare tcp connector
-            TcpClient client = new TcpClient(receiverAddress, port);
+            TcpClient client = null;
+            NetworkStream stream = null;
 
             //convert string to byte
             Byte[] dataByte = System.Text.Encoding.ASCII.GetBytes(dataString);
 
             try
             {
-                // Get a client stream for reading and writing.
-                NetworkStream stream = client.GetStream();
+                //make connection to receiver
+                client = new TcpClient(receiverAddress, port);
 
-                // Send the message to the connected TcpServer.
+                //get a path to send data
+                stream = client.GetStream();
+
+                //send the data to the receiver
                 stream.Write(dataByte, 0, dataByte.Length);
-
-                //let user know data has been sent
-                Console.WriteLine("Data sent server");
 
                 // Buffer to store the response bytes.
                 //byteData = new Byte[256];
@@ -145,16 +145,26 @@ namespace dns_updater
 
                 //save the response data
                 //responseData = System.Text.Encoding.ASCII.GetString(byteData, 0, bytes);
-
-                //close everything.
-                stream.Close();
-                client.Close();
+            }
+            catch (SocketException)
+            {
+                //let user know server did not respond
+                Console.WriteLine("No response from server, will try again later.");
             }
             //if fail
             catch (Exception e)
             {
                 //show error message to user
                 Console.WriteLine("Error when sending data:\n {0}", e);
+            }
+            finally
+            {
+                //close everything.
+                stream.Close();
+                client.Close();
+
+                //let user know data has been sent
+                Console.WriteLine("Data sent to server");
             }
 
             return responseData;
