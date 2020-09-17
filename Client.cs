@@ -9,27 +9,37 @@ namespace dns_updater
 {
     public class Client
     {
+        private StateData _stateData;
+
+        public Client()
+        {
+            _stateData = new StateData();
+        }
+
         /// <summary>
         /// The one client mode method, to start & run client mode.
         /// Uses infinite loop to keep client running, method does not close.
         /// </summary>
-        public static void Run()
+        public void Run()
         {
 
             //get receiver address from user
             string receiverAddress = GetReceiverAddress();
+
             //update receiver every X (seconds), set default 10
             int interval = 10;
 
             //check if IP has changed
             CheckIp:
+            //if IP has changed or previous sending failed
             if (IsIpChanged())
             {
-                //IP has changed, so send new IP to receiver
+                //try send new IP to receiver
                 SendNewIpToReceiver(receiverAddress);
 
-                //save a copy of the sent IP as Old IP
-                SaveOldIp(receiverAddress);
+                //if sending IP passed
+                //then save a copy of the sent IP as Old IP (deleting the old)
+                if (_stateData.IsPreviousSendPassed()) { SaveOldIp(GetNewIp()); }
 
                 //wait interval
                 WaitInterval(interval);
@@ -82,9 +92,9 @@ namespace dns_updater
             Thread.Sleep(intervalMs);
         }
 
-        private static void SendNewIpToReceiver(string receiverAddress)
+        private void SendNewIpToReceiver(string receiverAddress)
         {
-            //get old IP
+            //get old IP (for server's reference)
             string oldIp = GetOldIp();
             //get new IP
             string newIp = GetNewIp();
@@ -96,9 +106,9 @@ namespace dns_updater
             );
 
             //let user know old & new IPs
-            Console.WriteLine($"Old IP:{oldIp}\nNew IP:{newIp}");
+            Console.WriteLine($"Old:{oldIp}\nNew:{newIp}");
 
-            //send old & new IP to receiver, get response also
+            //send old & new IP to receiver
             SendDataToReceiver(receiverAddress, ipList);
 
             //display response temp
@@ -112,7 +122,7 @@ namespace dns_updater
         /// <param name="receiverAddress"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        private static void SendDataToReceiver(string receiverAddress, XElement data)
+        private void SendDataToReceiver(string receiverAddress, XElement data)
         {
             //construct message to be sent
             string dataString = data.ToString();
@@ -144,6 +154,9 @@ namespace dns_updater
                 //let user know data has been sent
                 Console.WriteLine("Data sent to server");
 
+                //mark data as sent succesfully
+                _stateData.SetPreviousSendPassed();
+
 
                 // Buffer to store the response bytes.
                 //byteData = new Byte[256];
@@ -158,12 +171,16 @@ namespace dns_updater
             {
                 //let user know server did not respond
                 Console.WriteLine("No response from server, will try again later.");
+                //mark data as not sent
+                _stateData.SetPreviousSendFailed();
             }
             //if fail
             catch (Exception e)
             {
                 //show error message to user
                 Console.WriteLine("Error when sending data:\n {0}", e);
+                //mark data as not sent
+                _stateData.SetPreviousSendFailed();
             }
 
         }

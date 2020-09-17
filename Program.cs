@@ -28,15 +28,10 @@ namespace dns_updater
                     Server.Run();
                     break;
                 case "C":
-                    Client.Run();
+                    Client client = new Client();
+                    client.Run();
                     break;
             }
-
-
         }
-
-
-
-
     }
 }
