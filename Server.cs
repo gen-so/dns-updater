@@ -9,9 +9,12 @@ namespace dns_updater
     {
         public static void Run()
         {
+            //get port number from user
+            int port = View.GetReceiverPort();
+
             GetData:
             //get data from sender
-            string ipData = GetDataFromSender();
+            string ipData = GetDataFromSender(port);
 
             //parse data to XML
             XElement ipList = XElement.Parse(ipData);
@@ -31,10 +34,10 @@ namespace dns_updater
         /// <summary>
         /// Gets IP data from sender via TCP
         /// </summary>
-        private static string GetDataFromSender()
+        private static string GetDataFromSender(int port)
         {
             //set the port to listen on
-            Int32 port = 80;
+            //Int32 port = 80;
 
             //sender can be from any IP address
             IPAddress senderIp = IPAddress.Any;

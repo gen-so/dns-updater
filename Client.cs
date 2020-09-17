@@ -23,8 +23,9 @@ namespace dns_updater
         public void Run()
         {
 
-            //get receiver address from user
-            string receiverAddress = GetReceiverAddress();
+            //get receiver address & port from user
+            string receiverAddress = View.GetReceiverAddress();
+            int receiverPort = View.GetReceiverPort();
 
             //update receiver every X (seconds), set default 10
             int interval = 10;
@@ -35,7 +36,7 @@ namespace dns_updater
             if (IsIpChanged())
             {
                 //try send new IP to receiver
-                SendNewIpToReceiver(receiverAddress);
+                SendNewIpToReceiver(receiverAddress, receiverPort);
 
                 //if sending IP passed
                 //then save a copy of the sent IP as Old IP (deleting the old)
@@ -58,26 +59,6 @@ namespace dns_updater
             }
         }
 
-        /// <summary>
-        /// Gets server's IP address from user
-        /// </summary>
-        private static string GetReceiverAddress()
-        {
-            string ipAddress;
-
-            GetIp:
-            //prompt user to type IP address
-            Console.WriteLine("Type the IP address of DNS server");
-
-            //store user input
-            ipAddress = Console.ReadLine();
-
-            //check IP, if invalid, try again
-            if (!isIpValid(ipAddress)) { goto GetIp; }
-
-            //return IP address to caller
-            return ipAddress;
-        }
 
         /// <summary>
         /// Pauses the application for interval time (seconds)
@@ -92,7 +73,7 @@ namespace dns_updater
             Thread.Sleep(intervalMs);
         }
 
-        private void SendNewIpToReceiver(string receiverAddress)
+        private void SendNewIpToReceiver(string ipAddress, int port)
         {
             //get old IP (for server's reference)
             string oldIp = GetOldIp();
@@ -109,7 +90,7 @@ namespace dns_updater
             Console.WriteLine($"Old:{oldIp}\nNew:{newIp}");
 
             //send old & new IP to receiver
-            SendDataToReceiver(receiverAddress, ipList);
+            SendDataToReceiver(ipAddress, port, ipList);
 
             //display response temp
             //Console.WriteLine(response);
@@ -119,16 +100,13 @@ namespace dns_updater
         /// Sends data in the XML format to specified IP address
         /// return response from receiver as string
         /// </summary>
-        /// <param name="receiverAddress"></param>
-        /// <param name="data"></param>
-        /// <returns></returns>
-        private void SendDataToReceiver(string receiverAddress, XElement data)
+        private void SendDataToReceiver(string receiverAddress, int port, XElement data)
         {
             //construct message to be sent
             string dataString = data.ToString();
 
             //set TCP port number
-            int port = 80;
+            //int port = 80;
 
             TcpClient client = null;
             NetworkStream stream = null;
@@ -185,25 +163,6 @@ namespace dns_updater
 
         }
 
-        private static bool isIpValid(string receiverAddress)
-        {
-            try
-            {
-                //try to parse IP address
-                IPAddress ipAddress = IPAddress.Parse(receiverAddress);
-            }
-            catch (FormatException)
-            {
-                //let user know IP address is invalid
-                Console.WriteLine("Server IP address not valid!");
-
-                //return as invalid
-                return false;
-            }
-
-            //if no exception, then IP is valid
-            return true;
-        }
 
         private static bool IsIpChanged()
         {

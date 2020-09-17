@@ -56,6 +56,7 @@
     <Compile Include="ScratchPad.cs" />
     <Compile Include="Server.cs" />
     <Compile Include="StateData.cs" />
+    <Compile Include="View.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
