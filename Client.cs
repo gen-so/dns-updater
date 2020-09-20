@@ -33,8 +33,12 @@ namespace dns_updater
             //check if IP has changed
             CheckIp:
             //if IP has changed or previous sending failed
-            if (IsIpChanged())
+            //if (IsIpChanged())
+            if (true)
             {
+                //let user know IP has changed
+                Console.WriteLine("IP has changed, updating Server");
+
                 //try send new IP to receiver
                 SendNewIpToReceiver(receiverAddress, receiverPort);
 
@@ -51,6 +55,9 @@ namespace dns_updater
             //if IP is same, not changed
             else
             {
+                //let user know IP is same
+                Console.WriteLine("IP is same so, not updating DNS Server");
+
                 //wait interval
                 WaitInterval(interval);
 
@@ -118,6 +125,7 @@ namespace dns_updater
             {
                 //make connection to receiver
                 client = new TcpClient(receiverAddress, port);
+                //client = new TcpClient("192.168.0.100", port);
 
                 //get a path to send data
                 stream = client.GetStream();
@@ -129,7 +137,7 @@ namespace dns_updater
                 stream.Close();
                 client.Close();
 
-                //let user know data has been sent
+                //let user know data has been sent 3.129.204.60
                 Console.WriteLine("Data sent to server");
 
                 //mark data as sent succesfully

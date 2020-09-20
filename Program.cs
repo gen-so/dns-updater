@@ -16,6 +16,13 @@ namespace dns_updater
 {
     public class Program
     {
+        //status of the program - 21/09/2020 (fully synced with GIT)
+        //Main function of the program is to auto update DNS records
+        //from client to server.
+        //It is not yet done, it can only send the client's IP to the server
+        //things to be done :
+        //- server after receiving the IP from client updates it's records
+
         static void Main(string[] args)
         {
             //set software mode
